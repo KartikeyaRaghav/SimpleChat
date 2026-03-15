@@ -19,7 +19,7 @@ const io = new Server(server, {
 const JWT_SECRET = process.env.JWT_SECRET || "legal_secret_2026";
 const mongoURI = process.env.MONGO_URI || "mongodb+srv://Admin:Kartikeya%4099@cluster1.zua83wq.mongodb.net/whatsapp?retryWrites=true&w=majority&appName=Cluster1";
 
-mongoose.connect(mongoURI).then(() => console.log("✅ MongoDB Live")).catch(err => console.error(err));
+mongoose.connect(mongoURI).then(() => console.log("Connected to MongoDB")).catch(err => console.error(err));
 
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
@@ -123,4 +123,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Port: ${PORT}`));
+server.listen(PORT, () => console.log(`Port: ${PORT}`));
