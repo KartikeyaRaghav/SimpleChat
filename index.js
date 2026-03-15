@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const https = require('https');
 
 const app = express();
 app.use(cors()); 
@@ -16,11 +17,13 @@ const io = new Server(server, {
     maxHttpBufferSize: 1e7 
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || "Kartikeya2006";
+//Configuration
+const JWT_SECRET = process.env.JWT_SECRET || "legal_secret_2026";
 const mongoURI = process.env.MONGO_URI || "mongodb+srv://Admin:Kartikeya%4099@cluster1.zua83wq.mongodb.net/whatsapp?retryWrites=true&w=majority&appName=Cluster1";
 
-mongoose.connect(mongoURI).then(() => console.log("✅ MongoDB Live")).catch(err => console.error(err));
+mongoose.connect(mongoURI).then(() => console.log("Connected to MongoDB")).catch(err => console.error(err));
 
+//Models
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
@@ -32,7 +35,8 @@ const Message = mongoose.model('Message', new mongoose.Schema({
 
 let onlineUsers = {}; 
 
-app.get('/', (req, res) => res.send("Api is online"));
+//Routes
+app.get('/', (req, res) => res.send("🚀 Kartikeya Simple Chat API is Online"));
 
 app.post('/register', async (req, res) => {
     try {
@@ -76,6 +80,7 @@ app.get('/users', async (req, res) => {
     } catch (e) { res.status(500).json([]); }
 });
 
+//Socket Logic
 io.on('connection', (socket) => {
     socket.on('join', (username) => {
         socket.join(username);
@@ -125,6 +130,16 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+//Ping
+const RENDER_URL = "https://simplechat-9zs6.onrender.com";
+setInterval(() => {
+    https.get(RENDER_URL, (res) => {
+        console.log(`Pinged self: Status Code ${res.statusCode}`);
+    }).on('error', (e) => {
+        console.error(`Ping failed: ${e.message}`);
+    });
+}, 600000); //10 minutes
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server active on port ${PORT}`));
