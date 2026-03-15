@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Private Chat</title>
+    <title>Simple Chat By Kartikeya</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #e5ddd5; display: flex; flex-direction: column; height: 100vh; }
         #auth-container { display: flex; align-items: center; justify-content: center; height: 100vh; }
@@ -25,62 +25,73 @@
         .delete-btn { position: absolute; top: -8px; right: -8px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 9px; display: none; }
         .msg-box:hover .delete-btn { display: block; }
         .save-btn { display: block; background: #075e54; color: white; text-align: center; padding: 5px; margin-top: 5px; border-radius: 4px; font-size: 11px; cursor: pointer; text-decoration: none; border: none; width: 100%; }
-        input[type="text"], input[type="password"] { width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        input { width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
     <div id="auth-container">
         <div class="auth-box">
-            <h2 id="auth-title">Login</h2>
+            <h2>Login to continue...</h2>
             <input type="text" id="username" placeholder="Username">
             <input type="password" id="password" placeholder="Password">
-            <button onclick="authAction()" style="width:95%; padding:10px; background:#075e54; color:white; border:none; border-radius:5px; cursor:pointer;">Enter</button>
+            <button onclick="authAction()" style="width:95%; padding:10px; background:#075e54; color:white; border:none; cursor:pointer;">Login / Register</button>
             <p id="error-msg" style="color:red; font-size:12px; margin-top:10px;"></p>
-            <p onclick="toggleAuth()" style="cursor:pointer; color:blue; font-size:12px; margin-top:10px;">Register Account</p>
         </div>
     </div>
 
     <div id="chat-container">
-        <div id="sidebar">
-            <div style="padding:15px; background:#eee; font-weight:bold;">Secure Contacts</div>
-            <div id="user-list"></div>
-        </div>
+        <div id="sidebar"><div style="padding:15px; background:#eee; font-weight:bold;">Users</div><div id="user-list"></div></div>
         <div id="main-chat">
-            <header><span id="header-text">Select a contact</span><button id="clear-btn" onclick="clearAllChat()">Clear History</button></header>
+            <header><span id="header-text">Select User</span><button id="clear-btn" onclick="clearAllChat()">Clear History</button></header>
             <ul id="messages"></ul>
             <div class="privacy-note" id="privacy-banner">⚠️ Images NOT saved in history. Download to save.</div>
             <form id="form" style="display:none;">
                 <input type="file" id="file-input" accept="image/*" style="display:none;">
                 <button type="button" onclick="document.getElementById('file-input').click()" style="background:none; border:none; font-size:20px; cursor:pointer;">📎</button>
                 <input id="chat-input" placeholder="Type a message..." autocomplete="off">
-                <button type="submit" style="background:#075e54; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer;">SEND</button>
+                <button type="submit" style="background:#075e54; color:white; border:none; padding:10px 15px; border-radius:20px;">SEND</button>
             </form>
         </div>
     </div>
 
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://simplechat-9zs6.onrender.com/socket.io/socket.io.js"></script>
     <script>
-        const API_URL = "http://localhost:3000"; // UPDATE THIS AFTER DEPLOYMENT
-        const socket = io(API_URL, { autoConnect: false });
-        let currentUser = "", selectedUser = "", isLogin = true;
-
-        function toggleAuth() { isLogin = !isLogin; document.getElementById('auth-title').innerText = isLogin ? "Login" : "Register"; }
+        const API_URL = "https://simplechat-9zs6.onrender.com"; 
+        const socket = io(API_URL, { 
+            autoConnect: false,
+            transports: ['websocket', 'polling']
+        });
+        let currentUser = "", selectedUser = "";
 
         async function authAction() {
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
+            if(!user || !pass) return alert("Fill fields");
+
             try {
-                const res = await fetch(`${API_URL}/${isLogin ? 'login' : 'register'}`, {
+                let res = await fetch(`${API_URL}/login`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })
                 });
+                
+                if (!res.ok) {
+                    res = await fetch(`${API_URL}/register`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user, password: pass })
+                    });
+                }
+
                 const data = await res.json();
                 if (res.ok) {
-                    if (isLogin) { currentUser = data.username; startChat(); }
-                    else { alert("Registered! Now Login."); toggleAuth(); }
-                } else { document.getElementById('error-msg').innerText = data.error; }
-            } catch (err) { alert("Cannot reach server. Is it running?"); }
+                    currentUser = user;
+                    startChat();
+                } else {
+                    document.getElementById('error-msg').innerText = data.error;
+                }
+            } catch (err) {
+                alert("Server is still waking up. Please try again in 30 seconds.");
+            }
         }
 
         function startChat() {
@@ -90,6 +101,11 @@
             socket.emit('join', currentUser);
             loadUsers();
         }
+
+        // Automatic list update when a new user registers
+        socket.on('user registered', () => {
+            loadUsers();
+        });
 
         async function loadUsers() {
             const res = await fetch(`${API_URL}/users`);
@@ -116,7 +132,7 @@
             selectedUser = targetUser;
             document.querySelectorAll('.user-item').forEach(i => i.style.background = "white");
             el.style.background = "#dcf8c6";
-            document.getElementById('header-text').innerText = "Chatting with: " + targetUser;
+            document.getElementById('header-text').innerText = "Chat with " + targetUser;
             document.getElementById('clear-btn').style.display = 'block';
             document.getElementById('form').style.display = 'flex';
             document.getElementById('privacy-banner').style.display = 'block';
@@ -129,19 +145,14 @@
         socket.on('message deleted', (id) => { const m = document.getElementById(id); if (m) m.remove(); });
         socket.on('history cleared', () => { document.getElementById('messages').innerHTML = ""; });
 
-        function downloadImg(str) {
-            const a = document.createElement('a'); a.href = str; a.download = `img_${Date.now()}.png`; a.click();
-        }
-
         function addMsg(u, t, id) {
             const li = document.createElement('li');
             li.className = 'msg-box'; li.id = id;
             li.style.background = u === currentUser ? "#dcf8c6" : "white";
             li.style.alignSelf = u === currentUser ? "flex-end" : "flex-start";
             let del = u === currentUser ? `<button class="delete-btn" onclick="socket.emit('delete message', '${id}')">✕</button>` : "";
-            
             if (t.startsWith('data:image')) {
-                li.innerHTML = `${del}<strong>${u}</strong><br><img src="${t}" style="max-width:100%;"><button class="save-btn" onclick="downloadImg('${t}')">Save to Device</button>`;
+                li.innerHTML = `${del}<strong>${u}</strong><br><img src="${t}" style="max-width:100%;"><button class="save-btn" onclick="downloadImg('${t}')">Save</button>`;
             } else {
                 li.innerHTML = `${del}<strong>${u}:</strong> ${t}`;
             }
@@ -149,8 +160,12 @@
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
         }
 
+        function downloadImg(str) {
+            const a = document.createElement('a'); a.href = str; a.download = `img_${Date.now()}.png`; a.click();
+        }
+
         function clearAllChat() {
-            if(confirm(`Wipe all history with ${selectedUser}?`)) socket.emit('clear history', { from: currentUser, to: selectedUser });
+            if(confirm(`Clear history with ${selectedUser}?`)) socket.emit('clear history', { from: currentUser, to: selectedUser });
         }
 
         document.getElementById('file-input').onchange = function() {

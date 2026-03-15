@@ -16,14 +16,11 @@ const io = new Server(server, {
     maxHttpBufferSize: 1e7 
 });
 
-// --- SECURE CONFIGURATION ---
-// In production, we use environment variables to hide sensitive data
-const JWT_SECRET = process.env.JWT_SECRET || "kartikeya_legal_vault_key_2026"; 
+const JWT_SECRET = process.env.JWT_SECRET || "kartikeya_2006";
 const mongoURI = process.env.MONGO_URI || "mongodb+srv://Admin:Kartikeya%4099@cluster1.zua83wq.mongodb.net/whatsapp?retryWrites=true&w=majority&appName=Cluster1";
 
 mongoose.connect(mongoURI).then(() => console.log("Connected to MongoDB")).catch(err => console.error(err));
 
-// --- MODELS ---
 const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
@@ -35,12 +32,15 @@ const Message = mongoose.model('Message', new mongoose.Schema({
 
 let onlineUsers = {}; 
 
-// --- AUTH ROUTES ---
 app.post('/register', async (req, res) => {
     try {
         const { username, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
         await new User({ username, password: hashedPassword }).save();
+        
+        // Broadcast to all clients to refresh their user lists
+        io.emit('user registered'); 
+        
         res.status(201).send({ message: "Registered" });
     } catch (err) { res.status(400).send({ error: "Username exists" }); }
 });
@@ -63,7 +63,6 @@ app.get('/users', async (req, res) => {
     res.json(usersWithStatus);
 });
 
-// --- SOCKET LOGIC ---
 io.on('connection', (socket) => {
     socket.on('join', (username) => {
         socket.join(username);
@@ -96,9 +95,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('clear history', async (data) => {
-        await Message.deleteMany({
-            $or: [{ from: data.from, to: data.to }, { from: data.to, to: data.from }]
-        });
+        await Message.deleteMany({ $or: [{ from: data.from, to: data.to }, { from: data.to, to: data.from }] });
         io.to(data.to).to(data.from).emit('history cleared');
     });
 
@@ -110,6 +107,5 @@ io.on('connection', (socket) => {
     });
 });
 
-// Render provides the PORT variable automatically
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Port: ${PORT}`));
