@@ -92,24 +92,46 @@
             loadUsers();
         }
 
+        let isLoadingUsers = false;
+
         async function loadUsers() {
-            const res = await fetch(`${API_URL}/users`);
-            const users = await res.json();
-            const list = document.getElementById('user-list');
-            list.innerHTML = "";
-            users.forEach(u => {
-                if (u.username !== currentUser) {
-                    const div = document.createElement('div');
-                    div.className = 'user-item'; div.id = `user-${u.username}`;
-                    const snippet = u.lastSnippet || "No messages yet";
-                    div.innerHTML = `
-                        <div class="user-info"><strong>${u.username}</strong><div class="status-dot ${u.isOnline ? 'online' : 'offline'}"></div></div>
-                        <div class="last-msg">${snippet}</div>
-                    `;
-                    div.onclick = () => selectUser(u.username, div);
-                    list.appendChild(div);
-                }
-            });
+            if (isLoadingUsers || !currentUser) return;
+            isLoadingUsers = true;
+
+            try {
+                // Pass currentUser as a query param so the server filters properly
+                const res = await fetch(`${API_URL}/users?currentUser=${encodeURIComponent(currentUser)}`);
+                const users = await res.json();
+                const list = document.getElementById('user-list');
+                list.innerHTML = "";
+
+                users.forEach(u => {
+                    if (u.username !== currentUser) {
+                        const div = document.createElement('div');
+                        div.className = 'user-item';
+                        div.id = `user-${u.username}`;
+
+                        if (u.username === selectedUser) {
+                            div.style.background = "#dcf8c6";
+                        }
+
+                        const snippet = u.lastSnippet || "No messages yet";
+                        div.innerHTML = `
+                            <div class="user-info">
+                                <strong>${u.username}</strong>
+                                <div class="status-dot ${u.isOnline ? 'online' : 'offline'}"></div>
+                            </div>
+                            <div class="last-msg">${snippet}</div>
+                        `;
+                        div.onclick = () => selectUser(u.username, div);
+                        list.appendChild(div);
+                    }
+                });
+            } catch (err) {
+                console.error("Error loading users:", err);
+            } finally {
+                isLoadingUsers = false;
+            }
         }
 
         function selectUser(target, el) {
@@ -135,7 +157,15 @@
         socket.on('user registered', loadUsers);
         socket.on('status change', loadUsers);
         socket.on('load history', (h) => h.forEach(m => addMsg(m.from, m.text, m._id, m.timestamp)));
-        socket.on('new message', (d) => { if (d.from === selectedUser || d.to === selectedUser) addMsg(d.from, d.text, d._id, d.timestamp); });
+        socket.on('new message', (d) => {
+            // Only display if the message is strictly between currentUser and the currently opened chat (selectedUser)
+            const isCurrentChat = (d.from === selectedUser && d.to === currentUser) || 
+                                  (d.from === currentUser && d.to === selectedUser);
+                          
+            if (isCurrentChat) {
+                addMsg(d.from, d.text, d._id, d.timestamp);
+            }
+        });
         socket.on('message deleted', (id) => { const m = document.getElementById(id); if (m) m.remove(); });
         socket.on('history cleared', () => { document.getElementById('messages').innerHTML = ""; });
 
