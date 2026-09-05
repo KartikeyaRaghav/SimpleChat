@@ -9,12 +9,16 @@ const https = require('https');
 
 const app = express();
 app.use(cors()); 
-app.use(express.json()); 
+// Increase JSON and URL-encoded body limits to 50MB
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const server = http.createServer(app);
+// Increase socket buffer to 50MB and enforce websocket priority
 const io = new Server(server, { 
     cors: { origin: "*" },
-    maxHttpBufferSize: 1e7 
+    maxHttpBufferSize: 5e7, // 50 MB
+    pingTimeout: 60000
 });
 
 // Configuration
