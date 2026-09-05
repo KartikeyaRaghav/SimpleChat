@@ -63,25 +63,43 @@ app.post('/login', async (req, res) => {
 
 app.get('/users', async (req, res) => {
     try {
-        const users = await User.find({}, 'username');
-        const usersWithMeta = await Promise.all(users.map(async (u) => {
-            const lastMsg = await Message.findOne({
-                $or: [{ from: u.username }, { to: u.username }]
-            }).sort({ timestamp: -1 });
-            
+        const loggedInUser = req.query.currentUser; // Get who is asking
+
+        // 1. Fetch users and deduplicate unique usernames
+        const allUsers = await User.find({}, 'username');
+        const uniqueUsernames = [...new Set(allUsers.map(u => u.username))];
+
+        // 2. Fetch snippets strictly between the loggedInUser and that user
+        const usersWithMeta = await Promise.all(uniqueUsernames.map(async (uname) => {
             let snippet = "No messages yet";
-            if (lastMsg) {
-                snippet = lastMsg.text.startsWith('data:image') ? "📷 Image" : (lastMsg.text || "").substring(0, 20) + "...";
+
+            if (loggedInUser) {
+                const lastMsg = await Message.findOne({
+                    $or: [
+                        { from: uname, to: loggedInUser },
+                        { from: loggedInUser, to: uname }
+                    ]
+                }).sort({ timestamp: -1 });
+
+                if (lastMsg) {
+                    snippet = lastMsg.text.startsWith('data:image') 
+                        ? "📷 Image" 
+                        : (lastMsg.text || "").substring(0, 20) + "...";
+                }
             }
 
             return {
-                username: u.username,
-                isOnline: !!onlineUsers[u.username],
+                username: uname,
+                isOnline: !!onlineUsers[uname],
                 lastSnippet: snippet
             };
         }));
+
         res.json(usersWithMeta);
-    } catch (e) { res.status(500).json([]); }
+    } catch (e) {
+        console.error("Error fetching users:", e);
+        res.status(500).json([]);
+    }
 });
 
 //Socket Logic
