@@ -22,17 +22,17 @@ A lightweight, real-time messaging app built with Node.js and WebSockets. Design
 
 ## **Installation:** ##
 
-'''git clone https://github.com/KartikeyaRaghav/SimpleChat.git
+```git clone https://github.com/KartikeyaRaghav/SimpleChat.git
 cd SimpleChat
-npm install'''
+npm install```
 
 Add the following to .env:
-'''PORT=3000
+```PORT=3000
 MONGO_URI=mongodb_connection_string
-JWT_SECRET=jwt_secret_key'''
+JWT_SECRET=jwt_secret_key```
 
 Start:
-'''node index.js'''
+```node index.js```
 Open http://localhost:3000 in browser.
 
 ## **License** ##
