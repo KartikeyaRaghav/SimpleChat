@@ -1,24 +1,39 @@
 # SimpleChat
 A lightweight, real-time messaging app built with Node.js and WebSockets. Designed to be fast, private, and easy to deploy.
 
-What’s inside?
-->Real-time Messaging: Instant chat using Socket.io.
+## **Features:** ##
 
-->Privacy-Focused Media: Images are sent as Base64 strings. They aren't stored on the server, ensuring your data stays between you and the receiver.
+**Real-Time Bidirectional Messaging:** Instant 1-on-1 private chat utilizing persistent WebSocket connections via Socket.io.
+**Zero-Persistence Media Privacy:** Images are transmitted in-memory as Base64 streams without being permanently logged to the server filesystem or database.
+**Live User Presence:** Dynamic online/offline indicator dots reflecting active socket sessions in real time.
+**Typing Indicators:** Responsive live typing states with debounced automated timeouts.
+**Message History & Management:** Persistent text conversation logs powered by MongoDB Atlas, with features for individual message deletion and full chat wiping.
+**Authentication & Security:** User registration and sign-in secured via Bcrypt password salting and stateless JSON Web Tokens (JWT).
+**Keep-Alive Daemon:** Integrated background HTTPS pinging interval to prevent cloud instance hibernation on free-tier deployments.
 
-->Live Features: Includes typing indicators, message timestamps, and last message previews.
+## **Tech Stack:** ##
 
-#Clone & Install
+**Backend:** Node.js, Express.js
+**Engine:** Socket.io
+**Database & ODM:** MongoDB Atlas, Mongoose
+**Authentication:** Bcrypt.js, JSON Web Tokens
+**Frontend:** Semantic HTML5, CSS3, JavaScript
+**Deployment:** Render PaaS
 
-Bash
-git clone https://github.com/KartikeyaRaghav/SimpleChat.git
+## **Installation:** ##
+
+'''git clone https://github.com/KartikeyaRaghav/SimpleChat.git
 cd SimpleChat
-npm install
+npm install'''
 
-#Run it
+Add the following to .env:
+'''PORT=3000
+MONGO_URI=mongodb_connection_string
+JWT_SECRET=jwt_secret_key'''
 
-Bash
-node index.js
+Start:
+'''node index.js'''
+Open http://localhost:3000 in browser.
 
-#License
+## **License** ##
 MIT
