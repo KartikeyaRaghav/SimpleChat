@@ -17,9 +17,13 @@ const io = new Server(server, {
     maxHttpBufferSize: 1e7 
 });
 
-//Configuration
-const JWT_SECRET = process.env.JWT_SECRET || "legal_secret_2026";
-const mongoURI = process.env.MONGO_URI || "mongodb+srv://Admin:Kartikeya%4099@cluster1.zua83wq.mongodb.net/whatsapp?retryWrites=true&w=majority&appName=Cluster1";
+// Configuration
+const JWT_SECRET = process.env.JWT_SECRET;
+const mongoURI = process.env.MONGO_URI;
+
+if (!mongoURI) {
+    console.error("CRITICAL: MONGO_URI environment variable is missing.");
+}
 
 mongoose.connect(mongoURI).then(() => console.log("Connected to MongoDB")).catch(err => console.error(err));
 
